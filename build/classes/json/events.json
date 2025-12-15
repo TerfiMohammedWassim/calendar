@@ -1,0 +1,14 @@
+[
+  {
+    "event_id": 1,
+    "titre": "Consultation Initiale",
+    "description": "Première consultation",
+    "date": "2025-12-14",
+    "heure": "10:00",
+    "createur_id": 2,
+    "responsable": "Dr. Ahmed",
+    "participants": ["Patient"],
+    "notificationBeforeMinutes": 10,
+    "partage_avec": [3]
+  }
+]

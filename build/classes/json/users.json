@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "nom": "Administrateur Medisyns",
+    "email": "admin@medisyns.com",
+    "password": "admin123",
+    "role": "admin"
+  },
+  {
+    "id": 2,
+    "nom": "Dr. Ahmed",
+    "email": "ahmed@medisyns.com",
+    "password": "med123",
+    "role": "medecin"
+  },
+  {
+    "id": 3,
+    "nom": "Patient Test",
+    "email": "patient@medisyns.com",
+    "password": "patient123",
+    "role": "patient"
+  }
+]
