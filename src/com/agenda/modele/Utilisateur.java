@@ -26,7 +26,7 @@ public class Utilisateur implements Serializable {
     public Utilisateur(String username, String nomComplet, String role, String email) {
         this.username = username;
         this.nomComplet = nomComplet;
-        this.role = role;
+        this.role = role != null ? role.toUpperCase() : "UTILISATEUR";
         this.email = email;
         this.dateInscription = LocalDate.now();
         this.specialites = new ArrayList<>();
@@ -82,27 +82,27 @@ public class Utilisateur implements Serializable {
     }
 
     public boolean peutCreerEvenements() {
-        return "ADMIN".equals(role) || "MEDECIN".equals(role) || "INFIRMIERE".equals(role);
+        return estAdministrateur() || estMedecin() || estInfirmier();
     }
 
     public boolean peutModifierEvenements() {
-        return "ADMIN".equals(role);
+        return estAdministrateur();
     }
 
     public boolean peutSupprimerEvenements() {
-        return "ADMIN".equals(role);
+        return estAdministrateur();
     }
 
     public boolean peutGererUtilisateurs() {
-        return "ADMIN".equals(role);
+        return estAdministrateur();
     }
 
     public boolean peutExporterDonnees() {
-        return "ADMIN".equals(role);
+        return estAdministrateur();
     }
 
     public boolean peutVoirStatistiquesCompletes() {
-        return "ADMIN".equals(role);
+        return estAdministrateur();
     }
 
     public boolean peutCreerEvenement() {
@@ -110,19 +110,19 @@ public class Utilisateur implements Serializable {
     }
     
     public boolean estAdministrateur() {
-        return "ADMIN".equals(role);
+        return role != null && "ADMIN".equalsIgnoreCase(role);
     }
     
     public boolean estMedecin() {
-        return "MEDECIN".equals(role);
+        return role != null && "MEDECIN".equalsIgnoreCase(role);
     }
     
     public boolean estInfirmier() {
-        return "INFIRMIERE".equals(role);
+        return role != null && "INFIRMIERE".equalsIgnoreCase(role);
     }
     
     public boolean estPatient() {
-        return "PATIENT".equals(role);
+        return role != null && "PATIENT".equalsIgnoreCase(role);
     }
     
     private String generateAvatarColor(String username) {
@@ -149,12 +149,14 @@ public class Utilisateur implements Serializable {
     }
     
     public String getRoleDisplay() {
-        switch(role) {
+        if (role == null) return "👤 Utilisateur";
+        switch(role.toUpperCase()) {
             case "ADMIN": return "👑 Administrateur";
             case "MEDECIN": return "👨‍⚕️ Médecin";
             case "INFIRMIERE": return "👩‍⚕️ Infirmière";
             case "ASSISTANT": return "👨‍💼 Assistant";
             case "PATIENT": return "👤 Patient";
+            case "USER":
             case "UTILISATEUR": return "👤 Utilisateur simple";
             default: return "👤 Utilisateur";
         }

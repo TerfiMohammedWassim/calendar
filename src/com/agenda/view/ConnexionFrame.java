@@ -277,17 +277,29 @@ public class ConnexionFrame extends JFrame {
             showSuccess("Bienvenue " + userJson.nom + " !");
             
             String role = convertRole(userJson.role);
+            System.out.println("DEBUG ConnexionFrame - userJson.role: " + userJson.role);
+            System.out.println("DEBUG ConnexionFrame - role converti: " + role);
+            
             Utilisateur utilisateur = new Utilisateur(
                 String.valueOf(userJson.id),
                 userJson.nom,
                 role,
                 userJson.email
             );
+            
+            System.out.println("DEBUG ConnexionFrame - utilisateur créé: " + utilisateur.getNomComplet());
+            System.out.println("DEBUG ConnexionFrame - utilisateur role: " + utilisateur.getRole());
+            System.out.println("DEBUG ConnexionFrame - utilisateur getRoleDisplay: " + utilisateur.getRoleDisplay());
+            System.out.println("DEBUG ConnexionFrame - estAdministrateur: " + utilisateur.estAdministrateur());
+            
             controller.setUtilisateurCourant(utilisateur);
             
+            System.out.println("DEBUG ConnexionFrame - controller.getUtilisateurCourant: " + controller.getUtilisateurCourant());
+            
             Timer timer = new Timer(800, e -> {
+                System.out.println("DEBUG Timer - avant MainFrame, controller user: " + controller.getUtilisateurCourant());
                 dispose();
-                MainFrame mainFrame = new MainFrame();
+                MainFrame mainFrame = new MainFrame(controller);
                 mainFrame.setVisible(true);
             });
             timer.setRepeats(false);

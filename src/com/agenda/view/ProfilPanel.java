@@ -396,7 +396,16 @@ public class ProfilPanel extends JPanel {
         saveButton.addActionListener(e -> {
             utilisateurCourant.setTelephone(telephoneField.getText().trim());
             utilisateurCourant.setService(serviceField.getText().trim());
+            
+            // Sauvegarder dans le JSON si possible
+            sauvegarderDansJson();
+            
+            // Mettre à jour l'interface
             updateProfileInfo();
+            
+            // Notifier MainFrame pour rafraîchir toute l'application
+            notifierMiseAJour();
+            
             dialog.dispose();
             showSuccessMessage("Profil mis à jour avec succès !");
         });
@@ -526,5 +535,35 @@ public class ProfilPanel extends JPanel {
         label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         
         JOptionPane.showMessageDialog(this, label, "💜 Succès", JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    /**
+     * Sauvegarde les modifications du profil dans le fichier JSON
+     */
+    private void sauvegarderDansJson() {
+        if (utilisateurCourant == null) return;
+        
+        try {
+            // Mettre à jour l'utilisateur dans le JSON via JsonManager
+            com.agenda.controller.JsonManager.mettreAJourUtilisateur(
+                utilisateurCourant.getEmail(),
+                utilisateurCourant.getNomComplet(),
+                utilisateurCourant.getTelephone(),
+                utilisateurCourant.getService()
+            );
+            System.out.println("Profil sauvegardé dans JSON pour: " + utilisateurCourant.getEmail());
+        } catch (Exception e) {
+            System.err.println("Erreur sauvegarde JSON profil: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Notifie MainFrame pour rafraîchir toute l'application
+     */
+    private void notifierMiseAJour() {
+        MainFrame mainFrame = MainFrame.getInstance();
+        if (mainFrame != null) {
+            mainFrame.refreshUserInfo();
+        }
     }
 }

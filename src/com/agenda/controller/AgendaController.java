@@ -113,6 +113,8 @@ public class AgendaController {
         if (utilisateur != null && !utilisateurs.containsKey(utilisateur.getUsername())) {
             utilisateurs.put(utilisateur.getUsername(), utilisateur);
         }
+        // Notifier tous les listeners pour rafraîchir l'UI
+        notifyRefreshListeners();
     }
 
     public Utilisateur getUtilisateurCourant() {

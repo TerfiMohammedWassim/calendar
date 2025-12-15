@@ -17,15 +17,81 @@ public class MainFrame extends JFrame {
     private MensuelPanel mensuelPanel;
     private ProfilPanel profilPanel;
     private NotificationsPanel notificationsPanel;
+    private JLabel headerUserInfo;
+    private JLabel statusUserLabel;
+    private static MainFrame instance;
+    private static AgendaController sharedController;
 
+    /**
+     * Constructeur par défaut - crée un nouveau contrôleur
+     */
     public MainFrame() {
-        this.controller = new AgendaController();
+        this(sharedController != null ? sharedController : new AgendaController());
+    }
+    
+    /**
+     * Constructeur avec contrôleur existant (utilisé après la connexion)
+     */
+    public MainFrame(AgendaController controller) {
+        this.controller = controller;
+        sharedController = controller;
         this.tabbedPane = new JTabbedPane();
+        instance = this;
+        
+        System.out.println("DEBUG MainFrame constructor - controller reçu: " + controller);
+        System.out.println("DEBUG MainFrame constructor - utilisateur: " + controller.getUtilisateurCourant());
+        if (controller.getUtilisateurCourant() != null) {
+            System.out.println("DEBUG MainFrame constructor - nom: " + controller.getUtilisateurCourant().getNomComplet());
+            System.out.println("DEBUG MainFrame constructor - role: " + controller.getUtilisateurCourant().getRole());
+        }
         
         initializeFrame();
         setupUI();
         setupGlobalShortcuts();
         setupWindowListener();
+        
+        // Enregistrer le listener de rafraîchissement global
+        controller.addRefreshListener(this::onGlobalRefresh);
+    }
+    
+    /**
+     * Obtient l'instance singleton de MainFrame
+     */
+    public static MainFrame getInstance() {
+        return instance;
+    }
+    
+    /**
+     * Appelé lors d'un rafraîchissement global
+     */
+    private void onGlobalRefresh() {
+        SwingUtilities.invokeLater(() -> {
+            refreshUserInfo();
+            refreshAllTabs();
+            updateNotificationBadge();
+        });
+    }
+    
+    /**
+     * Met à jour les informations utilisateur affichées partout
+     */
+    public void refreshUserInfo() {
+        Utilisateur user = controller.getUtilisateurCourant();
+        if (user != null) {
+            String roleIcon = "👤";
+            if (user.estAdministrateur()) roleIcon = "👑";
+            else if (user.estMedecin()) roleIcon = "👨‍⚕️";
+            else if (user.estInfirmier()) roleIcon = "👩‍⚕️";
+            
+            if (headerUserInfo != null) {
+                headerUserInfo.setText(roleIcon + " " + user.getNomComplet() + " - " + user.getRoleDisplay());
+            }
+            if (statusUserLabel != null) {
+                statusUserLabel.setText(user.getRoleDisplay());
+            }
+            // Mettre à jour le titre de la fenêtre
+            setTitle("💜 Medisyns - " + user.getNomComplet() + " (" + user.getRoleDisplay() + ")");
+        }
     }
 
     private void initializeFrame() {
@@ -37,10 +103,10 @@ public class MainFrame extends JFrame {
     }
 
     private void setupUI() {
-        // Utiliser l'utilisateur connecté ou démo
+        // Utiliser l'utilisateur connecté (ne pas créer de démo si connecté)
         Utilisateur utilisateurCourant = controller.getUtilisateurCourant();
         if (utilisateurCourant == null) {
-            // Créer un utilisateur selon le besoin
+            // Créer un utilisateur démo seulement si pas connecté
             utilisateurCourant = new Utilisateur("user", "Utilisateur Simple", "UTILISATEUR", "user@medisyns.com");
             controller.setUtilisateurCourant(utilisateurCourant);
         }
@@ -55,6 +121,9 @@ public class MainFrame extends JFrame {
         
         // Appliquer les restrictions selon le rôle
         applyUserRestrictions();
+        
+        // Mettre à jour les infos utilisateur après création de l'UI
+        refreshUserInfo();
     }
 
     private JPanel createHeaderPanel() {
@@ -77,7 +146,7 @@ public class MainFrame extends JFrame {
         addButton.addActionListener(e -> createNewEvent());
         
         // Affichage de l'utilisateur connecté
-        JLabel userInfo = new JLabel();
+        headerUserInfo = new JLabel();
         if (controller.getUtilisateurCourant() != null) {
             Utilisateur user = controller.getUtilisateurCourant();
             String roleIcon = "👤";
@@ -85,10 +154,10 @@ public class MainFrame extends JFrame {
             else if (user.estMedecin()) roleIcon = "👨‍⚕️";
             else if (user.estInfirmier()) roleIcon = "👩‍⚕️";
             
-            userInfo.setText(roleIcon + " " + user.getNomComplet() + " - " + user.getRoleDisplay());
+            headerUserInfo.setText(roleIcon + " " + user.getNomComplet() + " - " + user.getRoleDisplay());
         }
-        userInfo.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        userInfo.setForeground(new Color(100, 65, 150));
+        headerUserInfo.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        headerUserInfo.setForeground(new Color(100, 65, 150));
         
         // Bouton Mon Profil
         JButton profileButton = new JButton("👤 Mon Profil");
@@ -102,7 +171,7 @@ public class MainFrame extends JFrame {
         userPanel.add(Box.createHorizontalStrut(10));
         userPanel.add(profileButton);
         userPanel.add(Box.createHorizontalStrut(20));
-        userPanel.add(userInfo);
+        userPanel.add(headerUserInfo);
         
         headerPanel.add(titleLabel, BorderLayout.CENTER);
         headerPanel.add(userPanel, BorderLayout.EAST);
@@ -233,15 +302,15 @@ public class MainFrame extends JFrame {
         eventCountLabel.setForeground(new Color(80, 50, 120));
         
         // Afficher l'utilisateur connecté dans la barre de statut
-        JLabel userStatusLabel = new JLabel();
+        statusUserLabel = new JLabel();
         if (controller.getUtilisateurCourant() != null) {
-            userStatusLabel.setText(controller.getUtilisateurCourant().getRoleDisplay());
+            statusUserLabel.setText(controller.getUtilisateurCourant().getRoleDisplay());
         }
-        userStatusLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        userStatusLabel.setForeground(new Color(100, 65, 150));
+        statusUserLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        statusUserLabel.setForeground(new Color(100, 65, 150));
         
         statusPanel.add(statusLabel, BorderLayout.WEST);
-        statusPanel.add(userStatusLabel, BorderLayout.CENTER);
+        statusPanel.add(statusUserLabel, BorderLayout.CENTER);
         statusPanel.add(eventCountLabel, BorderLayout.EAST);
         
         return statusPanel;
@@ -474,6 +543,7 @@ public class MainFrame extends JFrame {
         EventDialog dialog = new EventDialog(this, controller, java.time.LocalDate.now());
         dialog.setVisible(true);
         refreshAllTabs();
+        updateNotificationBadge();
         showQuickNotification("✅ Nouvel événement créé");
     }
 
@@ -484,7 +554,23 @@ public class MainFrame extends JFrame {
         if (profilPanel != null) {
             profilPanel.setUtilisateurCourant(controller.getUtilisateurCourant());
         }
+        if (notificationsPanel != null) {
+            notificationsPanel.refreshNotifications();
+        }
         updateEventCount();
+        updateNotificationBadge();
+    }
+    
+    /**
+     * Rafraîchit toutes les données de l'application (données + UI)
+     * À appeler après une mise à jour importante
+     */
+    public void refreshAllData() {
+        SwingUtilities.invokeLater(() -> {
+            refreshUserInfo();
+            refreshAllTabs();
+            updateNotificationBadge();
+        });
     }
 
     private void refreshCurrentTab() {
