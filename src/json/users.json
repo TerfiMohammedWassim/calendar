@@ -33,5 +33,19 @@
     "email": "terfi@gmail.com",
     "password": "1234",
     "role": "admin"
+  },
+  {
+    "id": 6,
+    "nom": "ahla",
+    "email": "ahla@gmail.com",
+    "password": "1234",
+    "role": "admin"
+  },
+  {
+    "id": 7,
+    "nom": "om",
+    "email": "omar@gmail.com",
+    "password": "omar",
+    "role": "user"
   }
 ]
