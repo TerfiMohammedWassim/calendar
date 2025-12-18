@@ -84,7 +84,7 @@ public class MainFrame extends JFrame {
             else if (user.estInfirmier()) roleIcon = "👩‍⚕️";
             
             if (headerUserInfo != null) {
-                headerUserInfo.setText(roleIcon + " " + user.getNomComplet() + " - " + user.getRoleDisplay());
+                headerUserInfo.setText("<html><span style='font-size:12px;'>" + roleIcon + "</span> <b>" + user.getNomComplet() + "</b> <span style='color:#8B5CF6;'>•</span> " + user.getRoleDisplay() + "</html>");
             }
             if (statusUserLabel != null) {
                 statusUserLabel.setText(user.getRoleDisplay());
@@ -127,25 +127,42 @@ public class MainFrame extends JFrame {
     }
 
     private JPanel createHeaderPanel() {
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(240, 230, 250));
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        JPanel headerPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint gp = new GradientPaint(0, 0, new Color(139, 92, 246), getWidth(), 0, new Color(109, 40, 217));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
         
-        // Titre centré au milieu
-        JLabel titleLabel = new JLabel("💜 Medisyns - Agenda Collaboratif Médical", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(80, 50, 120));
+        // Titre avec style moderne
+        JLabel titleLabel = new JLabel("💜 Medisyns", SwingConstants.LEFT);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        titleLabel.setForeground(Color.WHITE);
         
         // Panneau utilisateur avec bouton Ajouter
-        JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        userPanel.setBackground(new Color(240, 230, 250));
+        JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        userPanel.setOpaque(false);
         
         // Bouton Ajouter un événement
-        JButton addButton = new JButton("➕ Ajouter un événement");
+        JButton addButton = new JButton("➕ Nouvel événement");
         styleAddButton(addButton);
         addButton.addActionListener(e -> createNewEvent());
         
-        // Affichage de l'utilisateur connecté
+        // Affichage de l'utilisateur connecté avec un style moderne
+        JPanel userInfoPanel = new JPanel();
+        userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.X_AXIS));
+        userInfoPanel.setBackground(new Color(255, 255, 255, 40));
+        userInfoPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1, true),
+            BorderFactory.createEmptyBorder(6, 14, 6, 14)
+        ));
+        
         headerUserInfo = new JLabel();
         if (controller.getUtilisateurCourant() != null) {
             Utilisateur user = controller.getUtilisateurCourant();
@@ -154,26 +171,18 @@ public class MainFrame extends JFrame {
             else if (user.estMedecin()) roleIcon = "👨‍⚕️";
             else if (user.estInfirmier()) roleIcon = "👩‍⚕️";
             
-            headerUserInfo.setText(roleIcon + " " + user.getNomComplet() + " - " + user.getRoleDisplay());
+            headerUserInfo.setText("<html><span style='font-size:12px;'>" + roleIcon + "</span> <b>" + user.getNomComplet() + "</b> <span style='color:#E0D4FF;'>•</span> " + user.getRoleDisplay() + "</html>");
         }
-        headerUserInfo.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        headerUserInfo.setForeground(new Color(100, 65, 150));
+        headerUserInfo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        headerUserInfo.setForeground(Color.WHITE);
         
-        // Bouton Mon Profil
-        JButton profileButton = new JButton("👤 Mon Profil");
-        styleProfileButton(profileButton);
-        profileButton.addActionListener(e -> {
-            tabbedPane.setSelectedIndex(3);
-            showQuickNotification("📋 Profil utilisateur");
-        });
+        userInfoPanel.add(headerUserInfo);
         
         userPanel.add(addButton);
         userPanel.add(Box.createHorizontalStrut(10));
-        userPanel.add(profileButton);
-        userPanel.add(Box.createHorizontalStrut(20));
-        userPanel.add(headerUserInfo);
+        userPanel.add(userInfoPanel);
         
-        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        headerPanel.add(titleLabel, BorderLayout.WEST);
         headerPanel.add(userPanel, BorderLayout.EAST);
         
         return headerPanel;
@@ -183,16 +192,17 @@ public class MainFrame extends JFrame {
         Utilisateur user = controller.getUtilisateurCourant();
         boolean canCreate = user != null && user.peutCreerEvenements();
         
-        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
         button.setForeground(Color.WHITE);
-        button.setBackground(canCreate ? new Color(106, 70, 193) : new Color(150, 150, 150));
+        button.setBackground(canCreate ? new Color(236, 72, 153) : new Color(150, 150, 150));
         button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(canCreate ? new Color(80, 50, 120) : new Color(100, 100, 100), 1),
-            BorderFactory.createEmptyBorder(8, 15, 8, 15)
+            BorderFactory.createLineBorder(canCreate ? new Color(219, 39, 119) : new Color(120, 120, 120), 2),
+            BorderFactory.createEmptyBorder(10, 22, 10, 22)
         ));
         button.setFocusPainted(false);
         button.setCursor(new Cursor(canCreate ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
         button.setEnabled(canCreate);
+        button.setOpaque(true);
         button.setToolTipText(canCreate ? 
             "Créer un nouvel événement (CTRL+N)" : 
             "Action réservée aux administrateurs et médecins");
@@ -202,19 +212,19 @@ public class MainFrame extends JFrame {
             button.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
-                    button.setBackground(new Color(124, 90, 210));
+                    button.setBackground(new Color(219, 39, 119));
                     button.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(100, 65, 150), 2),
-                        BorderFactory.createEmptyBorder(8, 15, 8, 15)
+                        BorderFactory.createLineBorder(new Color(190, 24, 93), 2),
+                        BorderFactory.createEmptyBorder(10, 22, 10, 22)
                     ));
                 }
                 
                 @Override
                 public void mouseExited(MouseEvent e) {
-                    button.setBackground(new Color(106, 70, 193));
+                    button.setBackground(new Color(236, 72, 153));
                     button.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(80, 50, 120), 1),
-                        BorderFactory.createEmptyBorder(8, 15, 8, 15)
+                        BorderFactory.createLineBorder(new Color(219, 39, 119), 2),
+                        BorderFactory.createEmptyBorder(10, 22, 10, 22)
                     ));
                 }
             });
@@ -261,24 +271,69 @@ public class MainFrame extends JFrame {
         this.profilPanel = new ProfilPanel(controller);
         this.notificationsPanel = new NotificationsPanel(controller);
         
+        // Modern tabbed pane styling
         tabbedPane.setBackground(new Color(250, 245, 255));
         tabbedPane.setForeground(new Color(80, 50, 120));
-        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        tabbedPane.setBorder(BorderFactory.createEmptyBorder(5, 10, 0, 10));
         
-        tabbedPane.addTab("📅 Vue Hebdomadaire", null, hebdoPanel, "Vue calendrier hebdomadaire avec drag & drop");
-        tabbedPane.addTab("📆 Vue Mensuelle", null, mensuelPanel, "Vue calendrier mensuel");
-        tabbedPane.addTab("📋 Liste des Événements", null, listePanel, "Liste complète avec recherche et filtres");
-        tabbedPane.addTab("👤 Mon Profil", null, profilPanel, "Profil utilisateur et mes événements");
+        // Custom UI for tabs
+        tabbedPane.setUI(new javax.swing.plaf.basic.BasicTabbedPaneUI() {
+            @Override
+            protected void installDefaults() {
+                super.installDefaults();
+                lightHighlight = new Color(139, 92, 246);
+                shadow = new Color(200, 180, 220);
+                darkShadow = new Color(139, 92, 246);
+                focus = new Color(139, 92, 246);
+            }
+            
+            @Override
+            protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex, int x, int y, int w, int h, boolean isSelected) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                if (isSelected) {
+                    GradientPaint gp = new GradientPaint(x, y, new Color(139, 92, 246), x, y + h, new Color(109, 40, 217));
+                    g2d.setPaint(gp);
+                    g2d.fillRoundRect(x + 2, y + 2, w - 4, h - 2, 10, 10);
+                } else {
+                    g2d.setColor(new Color(245, 240, 255));
+                    g2d.fillRoundRect(x + 2, y + 2, w - 4, h - 2, 10, 10);
+                }
+            }
+            
+            @Override
+            protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex, int x, int y, int w, int h, boolean isSelected) {
+                // No border
+            }
+            
+            @Override
+            protected void paintFocusIndicator(Graphics g, int tabPlacement, Rectangle[] rects, int tabIndex, Rectangle iconRect, Rectangle textRect, boolean isSelected) {
+                // No focus indicator
+            }
+            
+            @Override
+            protected void paintText(Graphics g, int tabPlacement, Font font, FontMetrics metrics, int tabIndex, String title, Rectangle textRect, boolean isSelected) {
+                g.setFont(font);
+                if (isSelected) {
+                    g.setColor(Color.WHITE);
+                } else {
+                    g.setColor(new Color(80, 50, 120));
+                }
+                g.drawString(title, textRect.x, textRect.y + metrics.getAscent());
+            }
+        });
+        
+        tabbedPane.addTab("📅 Hebdomadaire", null, hebdoPanel, "Vue calendrier hebdomadaire");
+        tabbedPane.addTab("📆 Mensuelle", null, mensuelPanel, "Vue calendrier mensuel");
+        tabbedPane.addTab("📋 Liste", null, listePanel, "Liste des événements");
+        tabbedPane.addTab("👤 Profil", null, profilPanel, "Mon profil");
         
         // Onglet Notifications avec badge
         int notifCount = notificationsPanel.getNombreNotificationsNonLues();
-        String notifTabTitle = notifCount > 0 ? "🔔 Notifications (" + notifCount + ")" : "🔔 Notifications";
-        tabbedPane.addTab(notifTabTitle, null, notificationsPanel, "Vos notifications de partage");
-        
-        // Couleurs de fond pour les onglets
-        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
-            tabbedPane.setBackgroundAt(i, new Color(240, 230, 250));
-        }
+        String notifTabTitle = notifCount > 0 ? "🔔 (" + notifCount + ")" : "🔔 Notifications";
+        tabbedPane.addTab(notifTabTitle, null, notificationsPanel, "Notifications");
         
         add(tabbedPane, BorderLayout.CENTER);
         

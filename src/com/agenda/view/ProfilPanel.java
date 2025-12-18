@@ -5,6 +5,7 @@ import com.agenda.modele.Evenement;
 import com.agenda.modele.Utilisateur;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -18,11 +19,20 @@ public class ProfilPanel extends JPanel {
     private final JLabel roleLabel;
     private final JLabel emailLabel;
     private final JLabel dateInscriptionLabel;
-    private final JLabel statsLabel;
+    private final JLabel statsEventsLabel;
+    private final JLabel statsSharedLabel;
     private final JPanel avatarPanel;
     private final DefaultTableModel tableModel;
     private final JTable evenementsTable;
-    private final JPanel permissionsPanel;
+    private JPanel permissionsListPanel;
+    
+    // Colors
+    private static final Color PRIMARY_COLOR = new Color(102, 51, 153);
+    private static final Color PRIMARY_LIGHT = new Color(147, 112, 219);
+    private static final Color BACKGROUND = new Color(250, 248, 255);
+    private static final Color CARD_BG = Color.WHITE;
+    private static final Color TEXT_PRIMARY = new Color(50, 50, 70);
+    private static final Color TEXT_SECONDARY = new Color(100, 100, 120);
     
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
@@ -31,19 +41,20 @@ public class ProfilPanel extends JPanel {
         this.controller = controller;
         this.utilisateurCourant = controller.getUtilisateurCourant();
         
-        setLayout(new BorderLayout());
-        setBackground(new Color(250, 245, 255));
+        setLayout(new BorderLayout(0, 15));
+        setBackground(BACKGROUND);
+        setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
         
-        // Initialiser les composants
+        // Initialize components
         this.nomLabel = new JLabel("Chargement...");
         this.roleLabel = new JLabel("Chargement...");
         this.emailLabel = new JLabel("Chargement...");
         this.dateInscriptionLabel = new JLabel("Chargement...");
-        this.statsLabel = new JLabel("Statistiques en chargement...");
+        this.statsEventsLabel = new JLabel("0");
+        this.statsSharedLabel = new JLabel("0");
         this.avatarPanel = createAvatarPanel();
-        this.permissionsPanel = new JPanel();
         
-        String[] colonnes = {"📝 Titre", "👤 Responsable", "👥 Participants", "📅 Date", "⏰ Heure", "🔔 Rappel"};
+        String[] colonnes = {"Titre", "Responsable", "Participants", "Date", "Heure"};
         this.tableModel = new DefaultTableModel(colonnes, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -54,28 +65,21 @@ public class ProfilPanel extends JPanel {
         this.evenementsTable = new JTable(tableModel);
         configurerTable();
         
-        // Panel supérieur avec informations du profil
-        JPanel topPanel = createTopPanel();
-        add(topPanel, BorderLayout.NORTH);
+        // Build UI
+        add(createHeaderCard(), BorderLayout.NORTH);
+        add(createMainContent(), BorderLayout.CENTER);
+        add(createFooter(), BorderLayout.SOUTH);
         
-        // Panel central avec les événements de l'utilisateur
-        JPanel centerPanel = createCenterPanel();
-        add(centerPanel, BorderLayout.CENTER);
-        
-        // Panel inférieur avec statistiques
-        JPanel bottomPanel = createBottomPanel();
-        add(bottomPanel, BorderLayout.SOUTH);
-        
-        // Rafraîchir les données
+        // Refresh data
         if (utilisateurCourant != null) {
             updateProfileInfo();
             refreshEvenements();
-            updatePermissionsPanel();
+            updatePermissionsList();
         }
     }
     
     private JPanel createAvatarPanel() {
-        return new JPanel() {
+        JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -83,227 +87,367 @@ public class ProfilPanel extends JPanel {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
                 if (utilisateurCourant != null) {
-                    // Cercle de l'avatar
-                    Color avatarColor = Color.decode(utilisateurCourant.getAvatarColor());
-                    g2d.setColor(avatarColor);
-                    g2d.fillOval(10, 10, 80, 80);
+                    // Shadow
+                    g2d.setColor(new Color(0, 0, 0, 30));
+                    g2d.fillOval(7, 7, 86, 86);
                     
-                    // Initiales
+                    // Avatar circle with gradient
+                    Color avatarColor = Color.decode(utilisateurCourant.getAvatarColor());
+                    GradientPaint gradient = new GradientPaint(5, 5, avatarColor.brighter(), 85, 85, avatarColor.darker());
+                    g2d.setPaint(gradient);
+                    g2d.fillOval(5, 5, 80, 80);
+                    
+                    // Border
                     g2d.setColor(Color.WHITE);
-                    g2d.setFont(new Font("Segoe UI", Font.BOLD, 24));
+                    g2d.setStroke(new BasicStroke(3));
+                    g2d.drawOval(5, 5, 80, 80);
+                    
+                    // Initials
+                    g2d.setColor(Color.WHITE);
+                    g2d.setFont(new Font("Segoe UI", Font.BOLD, 28));
                     String initiales = utilisateurCourant.getInitiales();
                     FontMetrics fm = g2d.getFontMetrics();
-                    int x = 50 - fm.stringWidth(initiales) / 2;
-                    int y = 50 + fm.getAscent() / 2;
+                    int x = 45 - fm.stringWidth(initiales) / 2;
+                    int y = 45 + fm.getAscent() / 2 - 2;
                     g2d.drawString(initiales, x, y);
                 }
             }
         };
+        panel.setPreferredSize(new Dimension(95, 95));
+        panel.setOpaque(false);
+        return panel;
+    }
+    
+    private JPanel createHeaderCard() {
+        // Main card panel
+        JPanel card = new JPanel(new BorderLayout(20, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Shadow
+                g2d.setColor(new Color(0, 0, 0, 20));
+                g2d.fillRoundRect(3, 3, getWidth() - 3, getHeight() - 3, 20, 20);
+                
+                // Card background
+                g2d.setColor(CARD_BG);
+                g2d.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 3, 20, 20);
+                
+                // Top accent gradient
+                GradientPaint accent = new GradientPaint(0, 0, PRIMARY_COLOR, getWidth(), 0, PRIMARY_LIGHT);
+                g2d.setPaint(accent);
+                g2d.fillRoundRect(0, 0, getWidth() - 3, 8, 20, 20);
+                g2d.fillRect(0, 4, getWidth() - 3, 8);
+            }
+        };
+        card.setOpaque(false);
+        card.setBorder(BorderFactory.createEmptyBorder(25, 25, 20, 25));
+        
+        // Left side - Avatar
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        leftPanel.setOpaque(false);
+        leftPanel.add(avatarPanel, BorderLayout.CENTER);
+        
+        // Center - User info
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        centerPanel.setOpaque(false);
+        
+        nomLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        nomLabel.setForeground(TEXT_PRIMARY);
+        nomLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        roleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        roleLabel.setForeground(PRIMARY_COLOR);
+        roleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        emailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        emailLabel.setForeground(TEXT_SECONDARY);
+        emailLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        dateInscriptionLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        dateInscriptionLabel.setForeground(TEXT_SECONDARY);
+        dateInscriptionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        centerPanel.add(nomLabel);
+        centerPanel.add(Box.createVerticalStrut(5));
+        centerPanel.add(roleLabel);
+        centerPanel.add(Box.createVerticalStrut(10));
+        centerPanel.add(emailLabel);
+        centerPanel.add(Box.createVerticalStrut(3));
+        centerPanel.add(dateInscriptionLabel);
+        
+        // Right side - Stats cards
+        JPanel rightPanel = new JPanel(new GridLayout(1, 2, 15, 0));
+        rightPanel.setOpaque(false);
+        rightPanel.add(createStatCard("📅", "Événements", statsEventsLabel, new Color(102, 126, 234)));
+        rightPanel.add(createStatCard("🔗", "Partagés", statsSharedLabel, new Color(118, 75, 162)));
+        
+        card.add(leftPanel, BorderLayout.WEST);
+        card.add(centerPanel, BorderLayout.CENTER);
+        card.add(rightPanel, BorderLayout.EAST);
+        
+        return card;
+    }
+    
+    private JPanel createStatCard(String icon, String label, JLabel valueLabel, Color color) {
+        JPanel card = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Background
+                g2d.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 20));
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                
+                // Border
+                g2d.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 60));
+                g2d.setStroke(new BasicStroke(1));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+            }
+        };
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setOpaque(false);
+        card.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15));
+        card.setPreferredSize(new Dimension(100, 80));
+        
+        JLabel iconLabel = new JLabel(icon);
+        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 20));
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        valueLabel.setForeground(color);
+        valueLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel textLabel = new JLabel(label);
+        textLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        textLabel.setForeground(TEXT_SECONDARY);
+        textLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        card.add(iconLabel);
+        card.add(valueLabel);
+        card.add(textLabel);
+        
+        return card;
+    }
+    
+    private JPanel createMainContent() {
+        JPanel content = new JPanel(new GridLayout(1, 2, 15, 0));
+        content.setOpaque(false);
+        
+        // Left - Permissions card
+        content.add(createPermissionsCard());
+        
+        // Right - Events card
+        content.add(createEventsCard());
+        
+        return content;
+    }
+    
+    private JPanel createPermissionsCard() {
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Shadow
+                g2d.setColor(new Color(0, 0, 0, 15));
+                g2d.fillRoundRect(3, 3, getWidth() - 3, getHeight() - 3, 15, 15);
+                
+                // Background
+                g2d.setColor(CARD_BG);
+                g2d.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 3, 15, 15);
+            }
+        };
+        card.setOpaque(false);
+        card.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Title
+        JLabel title = new JLabel("🔐 Vos Permissions");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(TEXT_PRIMARY);
+        title.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // Permissions list
+        permissionsListPanel = new JPanel();
+        permissionsListPanel.setLayout(new BoxLayout(permissionsListPanel, BoxLayout.Y_AXIS));
+        permissionsListPanel.setOpaque(false);
+        
+        JScrollPane scrollPane = new JScrollPane(permissionsListPanel);
+        scrollPane.setBorder(null);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        
+        card.add(title, BorderLayout.NORTH);
+        card.add(scrollPane, BorderLayout.CENTER);
+        
+        return card;
+    }
+    
+    private void updatePermissionsList() {
+        if (permissionsListPanel == null || utilisateurCourant == null) return;
+        
+        permissionsListPanel.removeAll();
+        
+        permissionsListPanel.add(createPermissionItem("Consulter les événements", true));
+        permissionsListPanel.add(Box.createVerticalStrut(8));
+        permissionsListPanel.add(createPermissionItem("Voir événements partagés", true));
+        permissionsListPanel.add(Box.createVerticalStrut(8));
+        permissionsListPanel.add(createPermissionItem("Partager des événements", true));
+        permissionsListPanel.add(Box.createVerticalStrut(8));
+        permissionsListPanel.add(createPermissionItem("Créer des événements", utilisateurCourant.peutCreerEvenements()));
+        permissionsListPanel.add(Box.createVerticalStrut(8));
+        permissionsListPanel.add(createPermissionItem("Modifier les événements", utilisateurCourant.peutModifierEvenements()));
+        permissionsListPanel.add(Box.createVerticalStrut(8));
+        permissionsListPanel.add(createPermissionItem("Supprimer les événements", utilisateurCourant.peutSupprimerEvenements()));
+        
+        if (utilisateurCourant.estAdministrateur()) {
+            permissionsListPanel.add(Box.createVerticalStrut(12));
+            permissionsListPanel.add(createPermissionItem("👑 Gestion des utilisateurs", true));
+            permissionsListPanel.add(Box.createVerticalStrut(8));
+            permissionsListPanel.add(createPermissionItem("📊 Statistiques complètes", true));
+        }
+        
+        permissionsListPanel.revalidate();
+        permissionsListPanel.repaint();
+    }
+    
+    private JPanel createPermissionItem(String text, boolean enabled) {
+        JPanel item = new JPanel(new BorderLayout(10, 0));
+        item.setOpaque(false);
+        item.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        
+        JLabel icon = new JLabel(enabled ? "✅" : "❌");
+        icon.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        label.setForeground(enabled ? TEXT_PRIMARY : TEXT_SECONDARY);
+        
+        item.add(icon, BorderLayout.WEST);
+        item.add(label, BorderLayout.CENTER);
+        
+        return item;
+    }
+    
+    private JPanel createEventsCard() {
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Shadow
+                g2d.setColor(new Color(0, 0, 0, 15));
+                g2d.fillRoundRect(3, 3, getWidth() - 3, getHeight() - 3, 15, 15);
+                
+                // Background
+                g2d.setColor(CARD_BG);
+                g2d.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 3, 15, 15);
+            }
+        };
+        card.setOpaque(false);
+        card.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Title
+        JLabel title = new JLabel("📋 Mes Événements");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(TEXT_PRIMARY);
+        title.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // Table
+        JScrollPane scrollPane = new JScrollPane(evenementsTable);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 235), 1));
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        
+        card.add(title, BorderLayout.NORTH);
+        card.add(scrollPane, BorderLayout.CENTER);
+        
+        return card;
     }
     
     private void configurerTable() {
         evenementsTable.setBackground(Color.WHITE);
-        evenementsTable.setForeground(new Color(80, 50, 120));
+        evenementsTable.setForeground(TEXT_PRIMARY);
         evenementsTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        evenementsTable.setRowHeight(25);
-        evenementsTable.setSelectionBackground(new Color(220, 200, 240));
-        evenementsTable.setSelectionForeground(new Color(80, 50, 120));
-        evenementsTable.setGridColor(new Color(220, 220, 220));
+        evenementsTable.setRowHeight(32);
+        evenementsTable.setSelectionBackground(new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 40));
+        evenementsTable.setSelectionForeground(TEXT_PRIMARY);
+        evenementsTable.setGridColor(new Color(240, 240, 245));
+        evenementsTable.setShowGrid(true);
+        evenementsTable.setIntercellSpacing(new Dimension(0, 0));
         
-        evenementsTable.getTableHeader().setBackground(new Color(180, 100, 200));
-        evenementsTable.getTableHeader().setForeground(Color.WHITE);
-        evenementsTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
-    }
-    
-    private JPanel createTopPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(240, 230, 250));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        // Header styling
+        evenementsTable.getTableHeader().setBackground(new Color(250, 248, 255));
+        evenementsTable.getTableHeader().setForeground(PRIMARY_COLOR);
+        evenementsTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        evenementsTable.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_LIGHT));
         
-        // Configurer l'avatar
-        avatarPanel.setPreferredSize(new Dimension(100, 100));
-        avatarPanel.setBackground(new Color(240, 230, 250));
-        
-        // Informations du profil à droite
-        JPanel infoPanel = new JPanel();
-        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-        infoPanel.setBackground(new Color(240, 230, 250));
-        
-        nomLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        nomLabel.setForeground(new Color(80, 50, 120));
-        
-        roleLabel.setFont(new Font("Segoe UI", Font.ITALIC, 16));
-        roleLabel.setForeground(new Color(100, 65, 150));
-        
-        emailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        emailLabel.setForeground(new Color(120, 80, 170));
-        
-        dateInscriptionLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        dateInscriptionLabel.setForeground(new Color(150, 120, 180));
-        
-        // Panel des permissions
-        permissionsPanel.setLayout(new BoxLayout(permissionsPanel, BoxLayout.Y_AXIS));
-        permissionsPanel.setBackground(new Color(240, 230, 250));
-        permissionsPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(180, 100, 200), 1),
-            BorderFactory.createEmptyBorder(10, 15, 10, 15)
-        ));
-        permissionsPanel.setMaximumSize(new Dimension(350, 150));
-        
-        infoPanel.add(nomLabel);
-        infoPanel.add(Box.createVerticalStrut(5));
-        infoPanel.add(roleLabel);
-        infoPanel.add(Box.createVerticalStrut(10));
-        infoPanel.add(emailLabel);
-        infoPanel.add(Box.createVerticalStrut(5));
-        infoPanel.add(dateInscriptionLabel);
-        infoPanel.add(Box.createVerticalStrut(15));
-        infoPanel.add(permissionsPanel);
-        
-        // Bouton modifier profil
-        JButton editButton = new JButton("✏️ Modifier le profil");
-        editButton.setBackground(new Color(180, 100, 200));
-        editButton.setForeground(Color.WHITE);
-        editButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        editButton.setFocusPainted(false);
-        editButton.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
-        editButton.addActionListener(e -> modifierProfil());
-        
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(new Color(240, 230, 250));
-        buttonPanel.add(editButton);
-        
-        panel.add(avatarPanel, BorderLayout.WEST);
-        panel.add(infoPanel, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        return panel;
-    }
-    
-    private void updatePermissionsPanel() {
-        permissionsPanel.removeAll();
-        
-        JLabel title = new JLabel("🔐 Vos Permissions:");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        title.setForeground(new Color(80, 50, 120));
-        
-        JTextArea permissionsText = new JTextArea();
-        permissionsText.setEditable(false);
-        permissionsText.setBackground(new Color(240, 230, 250));
-        permissionsText.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        
-        if (utilisateurCourant != null) {
-            StringBuilder perms = new StringBuilder();
-            
-            // Permissions communes à tous
-            perms.append("• ✅ Consulter mes événements\n");
-            perms.append("• ✅ Voir les événements partagés\n");
-            perms.append("• ✅ Partager des événements\n");
-            
-            // Permissions spécifiques selon le rôle
-            if (utilisateurCourant.peutCreerEvenements()) {
-                perms.append("• ✅ Créer de nouveaux événements\n");
-            } else {
-                perms.append("• ❌ Créer de nouveaux événements\n");
-            }
-            
-            if (utilisateurCourant.peutModifierEvenements()) {
-                perms.append("• ✅ Modifier les événements\n");
-            } else {
-                perms.append("• ❌ Modifier les événements\n");
-            }
-            
-            if (utilisateurCourant.peutSupprimerEvenements()) {
-                perms.append("• ✅ Supprimer les événements\n");
-            } else {
-                perms.append("• ❌ Supprimer les événements\n");
-            }
-            
-            if (utilisateurCourant.estAdministrateur()) {
-                perms.append("• 👑 Gestion des utilisateurs\n");
-                perms.append("• 📊 Statistiques complètes\n");
-                perms.append("• 💾 Export des données système\n");
-            }
-            
-            if (utilisateurCourant.estMedecin() || utilisateurCourant.estInfirmier()) {
-                perms.append("• 🏥 Accès professionnel\n");
-            }
-            
-            permissionsText.setText(perms.toString());
+        // Center align
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for (int i = 0; i < evenementsTable.getColumnCount(); i++) {
+            evenementsTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
-        
-        permissionsPanel.add(title);
-        permissionsPanel.add(Box.createVerticalStrut(5));
-        permissionsPanel.add(permissionsText);
-        
-        permissionsPanel.revalidate();
-        permissionsPanel.repaint();
     }
     
-    private JPanel createCenterPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(250, 245, 255));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+    private JPanel createFooter() {
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        footer.setOpaque(false);
         
-        JLabel titleLabel = new JLabel("📋 Mes Événements");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        titleLabel.setForeground(new Color(80, 50, 120));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
-        
-        JScrollPane scrollPane = new JScrollPane(evenementsTable);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(200, 180, 220)));
-        
-        panel.add(titleLabel, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        
-        return panel;
-    }
-    
-    private JPanel createBottomPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(230, 220, 240));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(180, 100, 200)),
-            BorderFactory.createEmptyBorder(10, 20, 10, 20)
-        ));
-        
-        statsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        statsLabel.setForeground(new Color(80, 50, 120));
-        
-        // Boutons d'action
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        actionPanel.setBackground(new Color(230, 220, 240));
-        
-        JButton refreshButton = new JButton("🔄 Actualiser");
-        styleSmallButton(refreshButton);
+        JButton refreshButton = createStyledButton("🔄 Actualiser", new Color(100, 100, 110));
         refreshButton.addActionListener(e -> refreshProfil());
         
-        JButton exportButton = new JButton("💾 Exporter mes données");
-        styleSmallButton(exportButton);
+        JButton exportButton = createStyledButton("💾 Exporter", PRIMARY_COLOR);
         exportButton.addActionListener(e -> exporterDonnees());
         
-        actionPanel.add(refreshButton);
-        actionPanel.add(exportButton);
+        footer.add(refreshButton);
+        footer.add(exportButton);
         
-        panel.add(statsLabel, BorderLayout.WEST);
-        panel.add(actionPanel, BorderLayout.EAST);
-        
-        return panel;
+        return footer;
     }
     
-    private void styleSmallButton(JButton button) {
-        button.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+    private JButton createStyledButton(String text, Color bgColor) {
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                if (getModel().isPressed()) {
+                    g2d.setColor(bgColor.darker());
+                } else if (getModel().isRollover()) {
+                    g2d.setColor(bgColor.brighter());
+                } else {
+                    g2d.setColor(bgColor);
+                }
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                
+                super.paintComponent(g);
+            }
+        };
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
         button.setForeground(Color.WHITE);
-        button.setBackground(new Color(140, 80, 180));
+        button.setPreferredSize(new Dimension(120, 35));
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
         button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
     }
     
     public void setUtilisateurCourant(Utilisateur utilisateur) {
         this.utilisateurCourant = utilisateur;
         updateProfileInfo();
         refreshEvenements();
-        updatePermissionsPanel();
+        updatePermissionsList();
     }
     
     private void updateProfileInfo() {
@@ -313,8 +457,9 @@ public class ProfilPanel extends JPanel {
             nomLabel.setText(utilisateurCourant.getNomComplet());
             roleLabel.setText(utilisateurCourant.getRoleDisplay());
             emailLabel.setText("📧 " + utilisateurCourant.getEmail());
-            dateInscriptionLabel.setText("📅 Inscrit depuis: " + utilisateurCourant.getDateInscription().format(dateFormatter));
-            statsLabel.setText(utilisateurCourant.getStatistiques());
+            dateInscriptionLabel.setText("📅 Membre depuis " + utilisateurCourant.getDateInscription().format(dateFormatter));
+            statsEventsLabel.setText(String.valueOf(utilisateurCourant.getNombreEvenementsCrees()));
+            statsSharedLabel.setText(String.valueOf(utilisateurCourant.getNombreEvenementsPartages()));
             avatarPanel.repaint();
         });
     }
@@ -337,233 +482,90 @@ public class ProfilPanel extends JPanel {
             .collect(Collectors.toList());
         
         for (Evenement ev : evenementsUtilisateur) {
-            String participants = "Aucun";
+            String participants = "-";
             if (ev.getParticipants() != null && !ev.getParticipants().isEmpty()) {
                 participants = String.join(", ", ev.getParticipants());
-                if (participants.length() > 30) {
-                    participants = participants.substring(0, 27) + "...";
+                if (participants.length() > 25) {
+                    participants = participants.substring(0, 22) + "...";
                 }
             }
-            
-            String rappel = ev.getNotificationBeforeMinutes() > 0 ? 
-                ev.getNotificationBeforeMinutes() + " min avant" : "Aucun";
             
             tableModel.addRow(new Object[]{
                 ev.getTitre(),
                 ev.getResponsable(),
                 participants,
                 ev.getDate().format(dateFormatter),
-                ev.getHeure().format(timeFormatter),
-                rappel
+                ev.getHeure().format(timeFormatter)
             });
         }
-    }
-    
-    private void modifierProfil() {
-        if (utilisateurCourant == null) return;
         
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Modifier le profil", true);
-        dialog.setSize(400, 500);
-        dialog.setLocationRelativeTo(this);
-        dialog.getContentPane().setBackground(new Color(250, 245, 255));
-        
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-        panel.setBackground(new Color(250, 245, 255));
-        
-        JLabel titleLabel = new JLabel("✏️ Modifier le profil");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        titleLabel.setForeground(new Color(80, 50, 120));
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        JTextField telephoneField = new JTextField(utilisateurCourant.getTelephone());
-        JTextField serviceField = new JTextField(utilisateurCourant.getService());
-        
-        panel.add(titleLabel);
-        panel.add(Box.createVerticalStrut(20));
-        
-        panel.add(createLabeledField("📱 Téléphone:", telephoneField));
-        panel.add(Box.createVerticalStrut(15));
-        panel.add(createLabeledField("🏥 Service/Département:", serviceField));
-        panel.add(Box.createVerticalStrut(30));
-        
-        JButton saveButton = new JButton("💾 Sauvegarder");
-        saveButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        saveButton.setBackground(new Color(180, 100, 200));
-        saveButton.setForeground(Color.WHITE);
-        saveButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        saveButton.addActionListener(e -> {
-            utilisateurCourant.setTelephone(telephoneField.getText().trim());
-            utilisateurCourant.setService(serviceField.getText().trim());
-            
-            // Sauvegarder dans le JSON si possible
-            sauvegarderDansJson();
-            
-            // Mettre à jour l'interface
-            updateProfileInfo();
-            
-            // Notifier MainFrame pour rafraîchir toute l'application
-            notifierMiseAJour();
-            
-            dialog.dispose();
-            showSuccessMessage("Profil mis à jour avec succès !");
-        });
-        
-        panel.add(saveButton);
-        dialog.add(panel);
-        dialog.setVisible(true);
-    }
-    
-    private JPanel createLabeledField(String labelText, JTextField field) {
-        JPanel panel = new JPanel(new BorderLayout(10, 5));
-        panel.setBackground(new Color(250, 245, 255));
-        
-        JLabel label = new JLabel(labelText);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        label.setForeground(new Color(80, 50, 120));
-        
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        field.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(180, 100, 200), 1),
-            BorderFactory.createEmptyBorder(8, 10, 8, 10)
-        ));
-        
-        panel.add(label, BorderLayout.NORTH);
-        panel.add(field, BorderLayout.CENTER);
-        
-        return panel;
+        // Update stats
+        statsEventsLabel.setText(String.valueOf(evenementsUtilisateur.size()));
     }
     
     private void refreshProfil() {
         updateProfileInfo();
         refreshEvenements();
-        updatePermissionsPanel();
-        showSuccessMessage("Profil actualisé !");
+        updatePermissionsList();
+        showNotification("✅ Profil actualisé");
     }
     
     private void exporterDonnees() {
         if (utilisateurCourant == null) return;
         
-        String donnees = String.format(
-            "📋 PROFIL UTILISATEUR - Medisyns\n" +
-            "=============================\n\n" +
-            "👤 Informations personnelles:\n" +
-            "• Nom complet: %s\n" +
-            "• Rôle: %s\n" +
-            "• Email: %s\n" +
-            "• Téléphone: %s\n" +
-            "• Service: %s\n" +
-            "• Date d'inscription: %s\n" +
-            "• Dernier accès: %s\n\n" +
-            "📊 Statistiques:\n" +
-            "• Événements créés: %d\n" +
-            "• Événements partagés: %d\n\n" +
-            "📅 Mes événements (%d au total):\n",
-            utilisateurCourant.getNomComplet(),
-            utilisateurCourant.getRoleDisplay(),
-            utilisateurCourant.getEmail(),
-            utilisateurCourant.getTelephone().isEmpty() ? "Non renseigné" : utilisateurCourant.getTelephone(),
-            utilisateurCourant.getService().isEmpty() ? "Non renseigné" : utilisateurCourant.getService(),
-            utilisateurCourant.getDateInscription().format(dateFormatter),
-            utilisateurCourant.getDernierAcces().format(dateFormatter),
-            utilisateurCourant.getNombreEvenementsCrees(),
-            utilisateurCourant.getNombreEvenementsPartages(),
-            tableModel.getRowCount()
-        );
+        StringBuilder donnees = new StringBuilder();
+        donnees.append("═══════════════════════════════════════\n");
+        donnees.append("       PROFIL UTILISATEUR - Medisyns\n");
+        donnees.append("═══════════════════════════════════════\n\n");
         
-        // Ajouter la liste des événements
+        donnees.append("👤 INFORMATIONS PERSONNELLES\n");
+        donnees.append("───────────────────────────────────────\n");
+        donnees.append(String.format("   Nom complet: %s\n", utilisateurCourant.getNomComplet()));
+        donnees.append(String.format("   Rôle: %s\n", utilisateurCourant.getRoleDisplay()));
+        donnees.append(String.format("   Email: %s\n", utilisateurCourant.getEmail()));
+        donnees.append(String.format("   Téléphone: %s\n", utilisateurCourant.getTelephone().isEmpty() ? "Non renseigné" : utilisateurCourant.getTelephone()));
+        donnees.append(String.format("   Service: %s\n", utilisateurCourant.getService().isEmpty() ? "Non renseigné" : utilisateurCourant.getService()));
+        donnees.append(String.format("   Inscrit le: %s\n\n", utilisateurCourant.getDateInscription().format(dateFormatter)));
+        
+        donnees.append("📊 STATISTIQUES\n");
+        donnees.append("───────────────────────────────────────\n");
+        donnees.append(String.format("   Événements créés: %d\n", utilisateurCourant.getNombreEvenementsCrees()));
+        donnees.append(String.format("   Événements partagés: %d\n\n", utilisateurCourant.getNombreEvenementsPartages()));
+        
+        donnees.append("📋 MES ÉVÉNEMENTS\n");
+        donnees.append("───────────────────────────────────────\n");
+        
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            donnees += String.format(
-                "\n%d. %s\n" +
-                "   Responsable: %s\n" +
-                "   Date: %s à %s\n" +
-                "   Participants: %s\n",
-                i + 1,
-                tableModel.getValueAt(i, 0),
-                tableModel.getValueAt(i, 1),
-                tableModel.getValueAt(i, 3),
-                tableModel.getValueAt(i, 4),
-                tableModel.getValueAt(i, 2)
-            );
+            donnees.append(String.format("   %d. %s\n", i + 1, tableModel.getValueAt(i, 0)));
+            donnees.append(String.format("      Responsable: %s\n", tableModel.getValueAt(i, 1)));
+            donnees.append(String.format("      Date: %s à %s\n\n", tableModel.getValueAt(i, 3), tableModel.getValueAt(i, 4)));
         }
         
-        // Ajouter les permissions
-        donnees += "\n\n🔐 Mes permissions:\n";
-        if (utilisateurCourant.peutCreerEvenements()) donnees += "• ✅ Créer des événements\n";
-        else donnees += "• ❌ Créer des événements\n";
-        
-        if (utilisateurCourant.peutModifierEvenements()) donnees += "• ✅ Modifier des événements\n";
-        else donnees += "• ❌ Modifier des événements\n";
-        
-        if (utilisateurCourant.peutSupprimerEvenements()) donnees += "• ✅ Supprimer des événements\n";
-        else donnees += "• ❌ Supprimer des événements\n";
-        
-        donnees += "• ✅ Consulter mes événements\n";
-        donnees += "• ✅ Voir les événements partagés\n";
-        donnees += "• ✅ Partager des événements\n";
-        
-        if (utilisateurCourant.estAdministrateur()) {
-            donnees += "• 👑 Gestion des utilisateurs\n";
-            donnees += "• 📊 Statistiques complètes\n";
-            donnees += "• 💾 Export des données système\n";
+        if (tableModel.getRowCount() == 0) {
+            donnees.append("   Aucun événement créé\n");
         }
         
-        JTextArea textArea = new JTextArea(donnees);
-        textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        JTextArea textArea = new JTextArea(donnees.toString());
+        textArea.setFont(new Font("Consolas", Font.PLAIN, 12));
         textArea.setEditable(false);
+        textArea.setBackground(new Color(250, 250, 252));
         
         JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setPreferredSize(new Dimension(500, 400));
+        scrollPane.setPreferredSize(new Dimension(450, 400));
         
         JOptionPane.showMessageDialog(this, scrollPane, 
-            "💾 Données exportées - " + utilisateurCourant.getNomComplet(), 
-            JOptionPane.INFORMATION_MESSAGE);
+            "💾 Export - " + utilisateurCourant.getNomComplet(), 
+            JOptionPane.PLAIN_MESSAGE);
     }
     
-    private void showSuccessMessage(String message) {
-        String html = String.format(
-            "<html>" +
-            "<div style='background: linear-gradient(135deg, #E6D7FF, #F0E8FF); padding: 15px; border-radius: 10px; width: 300px;'>" +
-            "<div style='text-align: center; color: #6B46C1; font-size: 13px;'>✅ %s</div>" +
-            "</div>" +
-            "</html>",
-            message
-        );
+    private void showNotification(String message) {
+        JOptionPane pane = new JOptionPane(message, JOptionPane.INFORMATION_MESSAGE);
+        JDialog dialog = pane.createDialog(this, "Medisyns");
+        dialog.setModal(false);
+        dialog.setVisible(true);
         
-        JLabel label = new JLabel(html);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        
-        JOptionPane.showMessageDialog(this, label, "💜 Succès", JOptionPane.INFORMATION_MESSAGE);
-    }
-    
-    /**
-     * Sauvegarde les modifications du profil dans le fichier JSON
-     */
-    private void sauvegarderDansJson() {
-        if (utilisateurCourant == null) return;
-        
-        try {
-            // Mettre à jour l'utilisateur dans le JSON via JsonManager
-            com.agenda.controller.JsonManager.mettreAJourUtilisateur(
-                utilisateurCourant.getEmail(),
-                utilisateurCourant.getNomComplet(),
-                utilisateurCourant.getTelephone(),
-                utilisateurCourant.getService()
-            );
-            System.out.println("Profil sauvegardé dans JSON pour: " + utilisateurCourant.getEmail());
-        } catch (Exception e) {
-            System.err.println("Erreur sauvegarde JSON profil: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Notifie MainFrame pour rafraîchir toute l'application
-     */
-    private void notifierMiseAJour() {
-        MainFrame mainFrame = MainFrame.getInstance();
-        if (mainFrame != null) {
-            mainFrame.refreshUserInfo();
-        }
+        Timer timer = new Timer(1500, e -> dialog.dispose());
+        timer.setRepeats(false);
+        timer.start();
     }
 }

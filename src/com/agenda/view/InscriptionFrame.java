@@ -37,7 +37,7 @@ public class InscriptionFrame extends JFrame {
         
         setTitle("Medisyns - Inscription");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(420, 620);
+        setSize(400, 520);
         setLocationRelativeTo(parent);
         setResizable(false);
         
@@ -56,86 +56,87 @@ public class InscriptionFrame extends JFrame {
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBackground(BACKGROUND);
-        mainPanel.setBorder(new EmptyBorder(30, 50, 30, 50));
+        mainPanel.setBorder(new EmptyBorder(20, 40, 20, 40));
         
         // Titre
-        JLabel titleLabel = new JLabel("Creer un compte");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        JLabel titleLabel = new JLabel("Créer un compte");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
         titleLabel.setForeground(PRIMARY_COLOR);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("Rejoignez Medisyns");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         subtitleLabel.setForeground(TEXT_COLOR);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         mainPanel.add(titleLabel);
-        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(Box.createVerticalStrut(3));
         mainPanel.add(subtitleLabel);
-        mainPanel.add(Box.createVerticalStrut(30));
+        mainPanel.add(Box.createVerticalStrut(18));
         
         // Champ Nom complet
         mainPanel.add(createLabel("Nom complet"));
-        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(Box.createVerticalStrut(4));
         nomField = new JTextField(20);
         styleTextField(nomField);
         mainPanel.add(nomField);
-        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(Box.createVerticalStrut(10));
         
         // Champ Email
         mainPanel.add(createLabel("Email"));
-        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(Box.createVerticalStrut(4));
         emailField = new JTextField(20);
         styleTextField(emailField);
         mainPanel.add(emailField);
-        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(Box.createVerticalStrut(10));
         
         // Champ Mot de passe
         mainPanel.add(createLabel("Mot de passe"));
-        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(Box.createVerticalStrut(4));
         passwordField = new JPasswordField(20);
         styleTextField(passwordField);
         mainPanel.add(passwordField);
-        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(Box.createVerticalStrut(10));
         
         // Confirmer mot de passe
         mainPanel.add(createLabel("Confirmer mot de passe"));
-        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(Box.createVerticalStrut(4));
         confirmPasswordField = new JPasswordField(20);
         styleTextField(confirmPasswordField);
         mainPanel.add(confirmPasswordField);
-        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(Box.createVerticalStrut(10));
         
         // Role
         mainPanel.add(createLabel("Type de compte"));
-        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(Box.createVerticalStrut(4));
         String[] roles = {"Utilisateur", "Administrateur"};
         roleCombo = new JComboBox<>(roles);
         styleComboBox(roleCombo);
         mainPanel.add(roleCombo);
-        mainPanel.add(Box.createVerticalStrut(10));
+        mainPanel.add(Box.createVerticalStrut(6));
         
         // Message
         messageLabel = new JLabel(" ");
-        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
         messageLabel.setForeground(ERROR_COLOR);
         messageLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         mainPanel.add(messageLabel);
-        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(Box.createVerticalStrut(10));
         
         // Bouton Inscription
         registerButton = new JButton("S'inscrire");
         styleButton(registerButton);
         registerButton.addActionListener(e -> handleRegistration());
         mainPanel.add(registerButton);
-        mainPanel.add(Box.createVerticalStrut(15));
+        mainPanel.add(Box.createVerticalStrut(10));
         
         // Lien retour
         JPanel loginPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
         loginPanel.setBackground(BACKGROUND);
+        loginPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
         
-        JLabel loginText = new JLabel("Deja un compte ?");
-        loginText.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        JLabel loginText = new JLabel("Déjà un compte ?");
+        loginText.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         loginText.setForeground(TEXT_COLOR);
         
         JButton loginLink = new JButton("Se connecter");
@@ -153,19 +154,19 @@ public class InscriptionFrame extends JFrame {
     
     private JLabel createLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        label.setFont(new Font("Segoe UI", Font.BOLD, 11));
         label.setForeground(TEXT_COLOR);
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         return label;
     }
     
     private void styleTextField(JTextField field) {
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        field.setPreferredSize(new Dimension(300, 40));
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        field.setPreferredSize(new Dimension(300, 32));
         field.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(new Color(200, 200, 210), 1, true),
-            new EmptyBorder(8, 12, 8, 12)
+            new EmptyBorder(6, 10, 6, 10)
         ));
         
         field.addFocusListener(new FocusAdapter() {
@@ -173,33 +174,33 @@ public class InscriptionFrame extends JFrame {
             public void focusGained(FocusEvent e) {
                 field.setBorder(BorderFactory.createCompoundBorder(
                     new LineBorder(PRIMARY_COLOR, 2, true),
-                    new EmptyBorder(8, 12, 8, 12)
+                    new EmptyBorder(6, 10, 6, 10)
                 ));
             }
             @Override
             public void focusLost(FocusEvent e) {
                 field.setBorder(BorderFactory.createCompoundBorder(
                     new LineBorder(new Color(200, 200, 210), 1, true),
-                    new EmptyBorder(8, 12, 8, 12)
+                    new EmptyBorder(6, 10, 6, 10)
                 ));
             }
         });
     }
     
     private void styleComboBox(JComboBox<String> combo) {
-        combo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        combo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        combo.setPreferredSize(new Dimension(300, 40));
+        combo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        combo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        combo.setPreferredSize(new Dimension(300, 32));
         combo.setBackground(Color.WHITE);
         combo.setBorder(new LineBorder(new Color(200, 200, 210), 1, true));
     }
     
     private void styleButton(JButton button) {
-        button.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
         button.setForeground(Color.WHITE);
         button.setBackground(PRIMARY_COLOR);
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
-        button.setPreferredSize(new Dimension(300, 45));
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        button.setPreferredSize(new Dimension(300, 38));
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -222,7 +223,7 @@ public class InscriptionFrame extends JFrame {
     }
     
     private void styleLinkButton(JButton button) {
-        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 11));
         button.setForeground(PRIMARY_COLOR);
         button.setBackground(null);
         button.setBorderPainted(false);
